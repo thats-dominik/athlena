@@ -36,7 +36,7 @@ athlena is a cutting-edge fitness and calorie tracking app inspired by the wisdo
 ## getting started  
 1. clone the repository:  
    ```bash
-   git clone https://github.com/username/athlena.git
+   git clone https://github.com/thats-dominik/athlena.git
    cd athlena
    ```
 2. install dependencies:  
