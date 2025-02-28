@@ -72,17 +72,17 @@ export default function AuthModal({ isOpen, onClose, initialStep = "login" }) {
 
   const handleGoogleAuth = async () => {
     setError(null);
+  
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // Stelle sicher, dass diese URL in deinen Supabase Redirect-URLs eingetragen ist
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback`, // WICHTIG: Muss mit Supabase Redirect-URLs übereinstimmen
       },
     });
   
     if (error) {
       setError(error.message);
-      return;
+      console.error("❌ Google Auth Fehler:", error);
     }
   
     // Entferne router.push und onClose.
