@@ -70,19 +70,23 @@ export default function AuthModal({ isOpen, onClose, initialStep = "login" }) {
     onClose();
   };
 
-  // GOOGLE LOGIN / SIGNUP
   const handleGoogleAuth = async () => {
     setError(null);
-
-    const { data, error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        // Stelle sicher, dass diese URL in deinen Supabase Redirect-URLs eingetragen ist
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+  
     if (error) {
       setError(error.message);
       return;
     }
-
-    router.push("/dashboard"); // Direkt zum Dashboard
-    onClose();
+  
+    // Entferne router.push und onClose.
+    // Supabase leitet den Benutzer nach erfolgreichem Login automatisch weiter.
   };
 
   return (
