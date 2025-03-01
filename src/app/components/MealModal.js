@@ -2,14 +2,15 @@
 import { useState } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 
-export function MealModal({ onClose }) {
+export function MealModal({ onClose, initialCategory }) {
   const [mealName, setMealName] = useState("");
-  const [mealCategory, setMealCategory] = useState("breakfast");
+  const [mealCategory, setMealCategory] = useState(initialCategory || "Breakfast");
   const [foodItems, setFoodItems] = useState([]);
   const [showInputField, setShowInputField] = useState(false);
   const [imageFile, setImageFile] = useState(null); 
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  
 
   const handleFoodChange = (index, field, value) => {
     const updatedItems = [...foodItems];
@@ -17,6 +18,30 @@ export function MealModal({ onClose }) {
     setFoodItems(updatedItems);
   };
 
+  const [gradientPos, setGradientPos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const x = (clientX / window.innerWidth) * 100;
+    const y = (clientY / window.innerHeight) * 100;
+    setGradientPos({ x, y });
+  };
+
+
+  const fetchMeals = async (userId) => {
+    let { data, error } = await supabase
+      .from("meals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false });
+  
+    if (error) {
+      console.error("Error fetching meals:", error.message, error.details);
+      return;
+    }
+  
+    setMeals(data || []);
+  };
 
   const handleFileUpload = (event) => {
     setImageFile(event.target.files[0]); // ✅ Speichert das Bild
@@ -37,12 +62,17 @@ export function MealModal({ onClose }) {
   };
 
   const saveMeal = async () => {
+    if (!mealName.trim()) { // ❌ Falls der Name leer ist
+      alert("Please enter a meal name before saving.");
+      return;
+    }
+  
     const { data: user, error: userError } = await supabase.auth.getUser();
     if (userError || !user?.user) {
       alert("User not authenticated");
       return;
     }
-
+  
     const user_id = user.user.id;
     const { error } = await supabase.from("meals").insert([
       {
@@ -57,12 +87,12 @@ export function MealModal({ onClose }) {
         total_fat: foodItems.reduce((sum, item) => sum + item.fat, 0),
       },
     ]);
-
+  
     if (error) {
       alert("Error saving meal");
       return;
     }
-
+  
     onClose();
     location.reload();
   };
@@ -138,127 +168,198 @@ export function MealModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center">
-<div className="bg-gray-900 p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center"
+      onMouseMove={handleMouseMove}
+      onClick={onClose}
+    >
+      <div
+        className="p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto shadow-lg transition-all duration-300"
+        style={{
+          background: `radial-gradient(circle at ${gradientPos.x}% ${gradientPos.y}%, #2E1A47, #1d0d33)`,
+          boxShadow: "0px 10px 30px rgba(126, 58, 242, 0.3)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-bold text-blue-400 mb-4">Log your meal</h2>
-
+  
         <label className="text-gray-400 text-sm">Meal Name</label>
-        <input
-          type="text"
-          placeholder="Meal name (e.g. Omelette)"
-          value={mealName}
-          onChange={(e) => setMealName(e.target.value)}
-          className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
-        />
-
-        <label className="text-gray-400 text-sm">Meal Category</label>
-        <select
-          value={mealCategory}
-          onChange={(e) => setMealCategory(e.target.value)}
-          className="w-full p-2 mb-4 rounded bg-gray-800 text-white"
-        >
-          <option value="breakfast">Breakfast</option>
-          <option value="lunch">Lunch</option>
-          <option value="dinner">Dinner</option>
-          <option value="snack">Snack</option>
-        </select>
-
-        {foodItems.map((item, index) => (
-          <div key={index} className="mb-4 p-2 bg-gray-800 rounded-lg">
-            <label className="text-gray-400 text-sm">Food Name</label>
-            <input
-              type="text"
-              placeholder="Food name"
-              value={item.name}
-              onChange={(e) => handleFoodChange(index, "name", e.target.value)}
-              className="w-full p-2 rounded bg-gray-700 text-white mb-1"
-            />
-
-            <label className="text-gray-400 text-sm">Calories</label>
-            <input
-              type="number"
-              placeholder="Calories"
-              value={item.calories}
-              onChange={(e) => handleFoodChange(index, "calories", parseFloat(e.target.value) || 0)}
-              className="w-full p-2 rounded bg-gray-700 text-white mb-1"
-            />
-
-            <label className="text-gray-400 text-sm">Protein (g)</label>
-            <input
-              type="number"
-              placeholder="Protein (g)"
-              value={item.protein}
-              onChange={(e) => handleFoodChange(index, "protein", parseFloat(e.target.value) || 0)}
-              className="w-full p-2 rounded bg-gray-700 text-white mb-1"
-            />
-
-            <label className="text-gray-400 text-sm">Carbs (g)</label>
-            <input
-              type="number"
-              placeholder="Carbs (g)"
-              value={item.carbs}
-              onChange={(e) => handleFoodChange(index, "carbs", parseFloat(e.target.value) || 0)}
-              className="w-full p-2 rounded bg-gray-700 text-white mb-1"
-            />
-
-            <label className="text-gray-400 text-sm">Fat (g)</label>
-            <input
-              type="number"
-              placeholder="Fat (g)"
-              value={item.fat}
-              onChange={(e) => handleFoodChange(index, "fat", parseFloat(e.target.value) || 0)}
-              className="w-full p-2 rounded bg-gray-700 text-white"
-            />
-          </div>
-        ))}
-
-        <button onClick={addFoodItem} className="text-blue-400 mt-2">+ Add Food</button>
-
-        <button onClick={handleAskAI} className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600 w-full mt-4">
-          Ask AI 🔍
-        </button>
-
-        {showInputField && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-            <h3 className="text-white mb-2">Enter Meal Description</h3>
-
-                  {/* ✅ Bild-Upload-Feld */}
-        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-white mb-2">Upload a Meal Image (Optional)</h3>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="w-full p-2 rounded bg-gray-700 text-white"
-          />
-          {imageFile && <p className="text-green-400 text-sm mt-2">Image selected: {imageFile.name}</p>}
-        </div>
-
-        {/* ✅ Textfeld für Mahlzeitenbeschreibung */}
-        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-white mb-2">Enter Meal Description</h3>
           <input
             type="text"
-            placeholder="Enter meal description"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            className="w-full p-2 mt-2 rounded bg-gray-800 text-white"
+            placeholder="Meal name (e.g. Omelette)"
+            value={mealName}
+            onChange={(e) => setMealName(e.target.value)}
+            className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#1d0d33] text-white border border-gray-500 focus:border-white outline-none transition"
           />
-        </div>
 
-            <button 
-              onClick={submitAskAI} 
-              className="px-4 py-2 bg-red-500 rounded hover:bg-red-600 w-full mt-4"
+          <label className="text-gray-400 text-sm">Meal Category</label>
+          <select
+            value={mealCategory}
+            onChange={(e) => setMealCategory(e.target.value)}
+            className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#1d0d33] text-white border border-gray-500 focus:border-white outline-none transition"
+          >
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+  
+          {foodItems.map((item, index) => (
+            <div key={index} className="mt-4 mb-4 p-4 bg-[#1d0d33] rounded-lg border border-gray-600 shadow-md">
+              <label className="text-gray-400 text-sm">Food / Ingredient Name</label>
+              <input
+                type="text"
+                placeholder="Food name"
+                value={item.name}
+                onChange={(e) => handleFoodChange(index, "name", e.target.value)}
+                className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#170928] text-white border border-gray-500 focus:border-white focus:ring-2 focus:ring-[#7E3AF2] outline-none transition"
+              />
+
+              <label className="text-gray-400 text-sm mt-2 block">Calories</label>
+              <input
+                type="number"
+                placeholder="Calories"
+                value={item.calories}
+                onChange={(e) => handleFoodChange(index, "calories", parseFloat(e.target.value) || 0)}
+                className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#170928] text-white border border-gray-500 focus:border-white focus:ring-2 focus:ring-[#7E3AF2] outline-none transition"
+              />
+
+              <label className="text-gray-400 text-sm mt-2 block">Protein (g)</label>
+              <input
+                type="number"
+                placeholder="Protein (g)"
+                value={item.protein}
+                onChange={(e) => handleFoodChange(index, "protein", parseFloat(e.target.value) || 0)}
+                className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#170928] text-white border border-gray-500 focus:border-white focus:ring-2 focus:ring-[#7E3AF2] outline-none transition"
+              />
+
+              <label className="text-gray-400 text-sm mt-2 block">Carbs (g)</label>
+              <input
+                type="number"
+                placeholder="Carbs (g)"
+                value={item.carbs}
+                onChange={(e) => handleFoodChange(index, "carbs", parseFloat(e.target.value) || 0)}
+                className="mb-2 mt-1 w-full p-2 rounded-lg bg-[#170928] text-white border border-gray-500 focus:border-white focus:ring-2 focus:ring-[#7E3AF2] outline-none transition"
+              />
+
+              <label className="text-gray-400 text-sm mt-2 block">Fat (g)</label>
+              <input
+                type="number"
+                placeholder="Fat (g)"
+                value={item.fat}
+                onChange={(e) => handleFoodChange(index, "fat", parseFloat(e.target.value) || 0)}
+                className="mt-1 w-full p-2 rounded-lg bg-[#170928] text-white border border-gray-500 focus:border-white focus:ring-2 focus:ring-[#7E3AF2] outline-none transition"
+              />
+            </div>
+          ))}
+  
+          <div className="flex justify-between mt-2">
+          <button onClick={addFoodItem} className="text-blue-400">+ Add Food</button>
+          <button 
+            onClick={() => setFoodItems(foodItems.slice(0, -1))} 
+            className="text-red-400 hover:text-red-500 transition"
+          >
+            Remove Food –
+          </button>
+        </div>
+  
+        <button
+          onClick={() => setShowInputField((prev) => !prev)}
+          className="relative h-12 px-8 rounded-lg overflow-hidden transition-all duration-500 group w-full mt-4"
+        >
+          <div className="absolute inset-0 rounded-lg p-[2px] bg-gradient-to-b from-[#654358] via-[#17092A] to-[#2F0D64]">
+            <div className="absolute inset-0 bg-[#170928] rounded-lg opacity-90"></div>
+          </div>
+          <div className="absolute inset-[2px] bg-[#170928] rounded-lg opacity-95"></div>
+          <div className="absolute inset-[2px] bg-gradient-to-r from-[#170928] via-[#1d0d33] to-[#170928] rounded-lg opacity-90"></div>
+          <div className="absolute inset-[2px] bg-gradient-to-b from-[#654358]/40 via-[#1d0d33] to-[#2F0D64]/30 rounded-lg opacity-80"></div>
+          <div className="absolute inset-[2px] bg-gradient-to-br from-[#C787F6]/10 via-[#1d0d33] to-[#2A1736]/50 rounded-lg"></div>
+          <div className="absolute inset-[2px] shadow-[inset_0_0_15px_rgba(199,135,246,0.15)] rounded-lg"></div>
+          
+          <div className="relative flex items-center justify-center gap-2">
+            <span className="text-lg font-normal bg-white bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(199,135,246,0.4)] tracking-tighter">
+              {showInputField ? "Close Ask AI 🔍" : "Ask AI 🔍"}
+            </span>
+          </div>
+
+          <div className="absolute inset-[2px] opacity-0 transition-opacity duration-300 bg-gradient-to-r from-[#2A1736]/20 via-[#C787F6]/10 to-[#2A1736]/20 group-hover:opacity-100 rounded-lg"></div>
+        </button>
+  
+        {showInputField && (
+          <div className="mt-4 space-y-4">
+            {/* ✅ Upload Image */}
+            <div>
+              <h3 className="mb-2 text-gray-400 text-sm">Upload a Meal Image (Optional)</h3>
+              <label className="flex items-center justify-center w-full h-12 border border-gray-500 border-dashed rounded-lg cursor-pointer transition hover:border-white">
+                <span className="text-gray-400 text-base">Choose file...</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+              
+              {imageFile && (
+                <div className="relative mt-2 group flex items-center">
+                  <p className="text-green-400 text-xs">{imageFile.name}</p>
+                  <button
+                    onClick={() => setImageFile(null)}
+                    className="ml-2 text-red-500 hover:text-red-700 transition"
+                  >
+                    ❌
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ✅ Description Input */}
+            <div>
+              <h3 className="mb-2 text-gray-400 text-sm">Enter Meal Description</h3>
+              <input
+                type="text"
+                placeholder="e.g. Grilled chicken with vegetables"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="w-full p-2 rounded-lg bg-[#1d0d33] text-white border border-gray-500 focus:border-white outline-none transition"
+              />
+            </div>
+
+            {/* ✅ Submit Button mit Fly-Away Rocket Animation */}
+            <button
+              onClick={submitAskAI}
+              className="relative flex items-center justify-center w-full px-4 py-2 rounded-lg transition group overflow-hidden"
               disabled={loading}
+              style={{
+                background: "linear-gradient(135deg, #e63946, #b71c1c)",
+                boxShadow: "0px 4px 15px rgba(230, 57, 70, 0.4)",
+              }}
             >
-              {loading ? "🔄 Processing..." : "🚀 Submit"}
+              {loading ? "🔄 Processing..." : (
+                <>
+                  <span className="relative">🚀 Submit</span>
+                </>
+              )}
             </button>
           </div>
         )}
-
-        <div className="mt-4 flex justify-between">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-700 rounded">Cancel</button>
-          <button onClick={saveMeal} className="px-4 py-2 bg-purple-500 rounded hover:bg-purple-600">Save Meal</button>
+  
+          <div className="mt-4 flex gap-4">
+          <button 
+            onClick={onClose} 
+            className="w-1/2 px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={saveMeal}
+            className="w-1/2 px-4 py-2 rounded transition"
+            style={{
+              background: "linear-gradient(135deg, #7E3AF2, #4A2373)",
+            }}
+          >
+            Save Meal
+          </button>
         </div>
       </div>
     </div>

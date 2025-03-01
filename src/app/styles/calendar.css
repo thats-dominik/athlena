@@ -1,0 +1,52 @@
+
+/* Dark Mode für react-calendar */
+.react-calendar {
+    background-color: #1e1e1e;
+    color: white;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Tage mit Hover-Effekt */
+  .react-calendar__tile {
+    background: #2b2b2b;
+    color: white;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .react-calendar__tile:hover {
+    background: #3b3b3b;
+  }
+  
+  /* Markierung für gewähltes Datum */
+  .react-calendar__tile--active {
+    background: #4caf50 !important;
+    color: white !important;
+    font-weight: bold;
+  }
+  
+  /* Tage mit gespeicherten Mahlzeiten */
+  .react-calendar__tile--meal {
+    background: #673ab7;
+    color: white;
+  }
+  
+  /* Styling für Header (Monat/Jahr) */
+  .react-calendar__navigation {
+    background: #1e1e1e;
+  }
+  
+  .react-calendar__navigation button {
+    color: white;
+  }
+  
+  .react-calendar__month-view__weekdays {
+    background: #222;
+    color: white;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 5px;
+  }

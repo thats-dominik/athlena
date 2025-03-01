@@ -8,6 +8,15 @@ export default function SettingsModal({ onClose }) {
   const [carbGoal, setCarbGoal] = useState(""); // ✅ Kohlenhydrate-Ziel
   const [fatGoal, setFatGoal] = useState(""); // ✅ Fett-Ziel
   const [loading, setLoading] = useState(false); // ✅ Ladezustand für Datenabruf
+  const [gradientPos, setGradientPos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const x = (clientX / window.innerWidth) * 100;
+    const y = (clientY / window.innerHeight) * 100;
+    setGradientPos({ x, y });
+  };
+
 
   // ✅ Daten aus `users_info` abrufen
   useEffect(() => {
@@ -77,13 +86,18 @@ export default function SettingsModal({ onClose }) {
     <div 
       className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center"
       onClick={onClose} // ✅ Modal schließen, wenn außerhalb geklickt wird
+      onMouseMove={handleMouseMove}
     >
-      <div 
-        className="bg-gray-900 p-6 rounded-lg w-96 max-w-full shadow-lg"
-        onClick={(e) => e.stopPropagation()} // ✅ Verhindert Schließen, wenn im Modal geklickt wird
-      >
+        <div 
+            className="p-6 rounded-lg w-96 max-w-full shadow-lg transition-all duration-300"
+            style={{
+                background: `radial-gradient(circle at ${gradientPos.x}% ${gradientPos.y}%, #2E1A47, #1d0d33)`,
+                boxShadow: "0px 10px 30px rgba(126, 58, 242, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+        >
         <h2 className="text-xl font-bold text-blue-400 mb-4">Settings</h2>
-
+  
         {loading ? (
           <p className="text-gray-400">Loading...</p>
         ) : (
@@ -99,7 +113,7 @@ export default function SettingsModal({ onClose }) {
                 className="w-full p-2 rounded bg-gray-800 text-white mt-1"
               />
             </div>
-
+  
             {/* ✅ Protein bearbeiten */}
             <div className="mb-4">
               <label className="text-gray-400 text-sm">Daily Protein Goal (g)</label>
@@ -111,7 +125,7 @@ export default function SettingsModal({ onClose }) {
                 className="w-full p-2 rounded bg-gray-800 text-white mt-1"
               />
             </div>
-
+  
             {/* ✅ Kohlenhydrate bearbeiten */}
             <div className="mb-4">
               <label className="text-gray-400 text-sm">Daily Carbs Goal (g)</label>
@@ -123,7 +137,7 @@ export default function SettingsModal({ onClose }) {
                 className="w-full p-2 rounded bg-gray-800 text-white mt-1"
               />
             </div>
-
+  
             {/* ✅ Fett bearbeiten */}
             <div className="mb-4">
               <label className="text-gray-400 text-sm">Daily Fat Goal (g)</label>
@@ -135,10 +149,10 @@ export default function SettingsModal({ onClose }) {
                 className="w-full p-2 rounded bg-gray-800 text-white mt-1"
               />
             </div>
-
-            {/* ✅ Button zum Speichern */}
+  
+            {/* ✅ Button zum Speichern mit Gradient */}
             <button 
-              className="w-full px-4 py-2 bg-purple-500 rounded hover:bg-purple-600 transition"
+              className="w-full px-4 py-2 rounded transition bg-gradient-to-br from-[#7E3AF2] to-[#4A2373] hover:opacity-90"
               onClick={saveChanges} 
               disabled={loading} // ✅ Deaktiviert Button während Speicherung
             >
@@ -146,7 +160,7 @@ export default function SettingsModal({ onClose }) {
             </button>
           </>
         )}
-
+  
         {/* ✅ Schließen-Button */}
         <button 
           onClick={onClose} 
